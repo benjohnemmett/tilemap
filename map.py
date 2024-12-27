@@ -1,7 +1,7 @@
 import math
 import os
 from PIL import Image, ImageDraw
-from .util import lat_lon_to_tile, get_tile_url, lat_lon_to_tile_int, tile_to_lat_lon, map_vis_tile_dir_path
+from util import lat_lon_to_tile, get_tile_url, lat_lon_to_tile_int, tile_to_lat_lon, map_vis_tile_dir_path
 import requests
 
 class Map():
@@ -33,20 +33,6 @@ class Map():
 
   def show(self):
     self.image.show()
-
-  # # TODO move to separate module
-  # def fetch_tile(self, lat, lon, zoom, map_tile_dir=map_vis_tile_dir_path ):
-  #   x, y = lat_lon_to_tile_int(lat, lon, zoom=zoom)
-  #   file_name = f"s-{zoom}-{x}-{y}.jpeg"
-  #   url = get_tile_url(x, y, zoom)
-  #   print(f"Fetching {url}")
-  #   response = requests.get(url)
-  #   if response.status_code == 200:
-  #     print(f"Saving {file_name}")
-  #     with open(os.path.join(map_tile_dir, file_name), 'wb') as f:
-  #       f.write(response.content)
-  #   else:
-  #     print(f"Failed to fetch {url} with status code {response.status_code}")
 
 if __name__ == "__main__":
   m = Map()

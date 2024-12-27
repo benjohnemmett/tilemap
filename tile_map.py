@@ -1,29 +1,34 @@
+import math
 import os
 from PIL import Image, ImageDraw
-import map_vis.util as util
+import map_it.util as util
 
 class TileMap():
     def __init__(self, ll_p1, ll_p2, zoom):
-        self.p1 = (max(ll_p1[0], ll_p2[0]), min(ll_p1[1], ll_p2[1])) # north west corner
-        self.p2 = (min(ll_p1[0], ll_p2[0]), max(ll_p1[1], ll_p2[1])) # south east corner
+        self.nw_corner = (max(ll_p1[0], ll_p2[0]), min(ll_p1[1], ll_p2[1])) # north west corner
+        self.sw_corner = (min(ll_p1[0], ll_p2[0]), max(ll_p1[1], ll_p2[1])) # south east corner
         self.zoom = zoom
         self.missing_tiles_list = []
-        self.tiles = {}
-        tile_size = 256 # TODO get this from images... or at least verify it
+        self.tile_cache = {}
+        self.tile_size = 256 # TODO verify images are this size, or resize them
 
-        x1, y1 = util.lat_lon_to_tile(self.p1[0], self.p1[1], zoom)
-        x2, y2 = util.lat_lon_to_tile(self.p2[0], self.p2[1], zoom)
-        self.x_extent = sorted((x1, x2)) # TODO is it necessasry to sort here, it's already forced into topleft/bottomright
-        self.y_extent = sorted((y1, y2))
-        print(f"Map extent x:{self.x_extent}, y:{self.y_extent}")
+        top_left_corner = util.lat_lon_to_tile(self.nw_corner[0], self.nw_corner[1], zoom)
+        bottom_right_corner = util.lat_lon_to_tile(self.sw_corner[0], self.sw_corner[1], zoom)
+        self.tile_x_extent = (top_left_corner[0], bottom_right_corner[0])
+        self.tile_y_extent = (top_left_corner[1], bottom_right_corner[1])
+        print(f"Map extent x:{self.tile_x_extent}, y:{self.tile_y_extent}")
 
-        # TODO  would be better to store as lists of tile numbers instead of ranges
-        x_tiles = range(int(self.x_extent[0]), int(self.x_extent[1] + 1) + 1)
-        y_tiles = range(int(self.y_extent[0]), int(self.y_extent[1] + 1) + 1)
+        x_tiles = list(range(int(self.tile_x_extent[0]), int(self.tile_x_extent[1] + 1)))
+        y_tiles = list(range(int(self.tile_y_extent[0]), int(self.tile_y_extent[1] + 1)))
+        print(f"Tiles x:{x_tiles}, y:{y_tiles}")
 
-        self.map_size = [int(tile_size * (self.x_extent[1] - self.x_extent[0])), 
-                               int(tile_size * (self.y_extent[1] - self.y_extent[0]))]
+        pixel_bottom_right_corner = self.tile_to_pixel(self.tile_x_extent[1], self.tile_y_extent[1])
+        pixel_top_left_corner = self.tile_to_pixel(self.tile_x_extent[0], self.tile_y_extent[0])
+        self.map_size = pixel_bottom_right_corner
+        print(f"Map size x:{self.map_size[0]}, y:{self.map_size[1]}")
+
         self.image = Image.new("RGBA", (self.map_size[0], self.map_size[1]))
+        self.draw = ImageDraw.Draw(self.image)
 
         # Fetch the tiles
         for i, x in enumerate(x_tiles):
@@ -33,36 +38,38 @@ class TileMap():
                 tile_exists_on_file = tile_path is not None
                 if tile_exists_on_file:
                     tile = Image.open(tile_path)
-                    print(f"  size: {tile.size}")
-                    self.tiles[(x, y, zoom)] = tile
+                    self.tile_cache[(x, y, zoom)] = tile
                 else:
                     self.missing_tiles_list.append((x, y, zoom))
-                    util.fetch_tile(x, y, zoom)
+                    util.fetch_tile(x, y, zoom) # TODO make this optional
 
-        # Draw the tiles
-        top_left = util.lat_lon_to_tile(self.p1[0], self.p1[1], zoom)
+        # Calculate Pixel offset from tile top left corner
+        self.pixel_shift_x = int(math.floor(self.tile_size * (int(top_left_corner[0]) - top_left_corner[0])))
+        self.pixel_shift_y = int(math.floor(self.tile_size * (int(top_left_corner[1]) - top_left_corner[1])))
+        print(f"Pixel shift x:{self.pixel_shift_x}, y:{self.pixel_shift_y}")
 
-        # Top left coordinate
-        x_shift_pixels = int(tile_size * (int(top_left[0]) - top_left[0]))
-        y_shift_pixels = int(tile_size * (int(top_left[1]) - top_left[1]))
-        print(f"Pixel shift x:{x_shift_pixels}, y:{y_shift_pixels}")
         for i, x in enumerate(x_tiles):
             for j, y in enumerate(y_tiles):
-                if (x, y, zoom) not in self.tiles:
+                if (x, y, zoom) not in self.tile_cache:
                     print(f"Skipping missing tile ({x}, {y}, {zoom})")
                     continue
-                tile = self.tiles[(x, y, zoom)]
-                self.image.paste(tile, (x_shift_pixels + i * 256, y_shift_pixels + j * 256))
+                tile = self.tile_cache[(x, y, zoom)]
+                self.image.paste(tile, (self.pixel_shift_x + i * 256, self.pixel_shift_y + j * 256))
                 # TODO cutoff tiles for the bottom & left edges
                 #     or is this already done by the image size...?
-            
 
-        # self.image.show(title=f"Map (zoom {zoom})")
-        # self.image.save(f"map_{zoom}.png")
-
-    # TODO implement this
     def mark_point(self, lat, lon, color=(255, 0, 0)):
-        pass
+        # Calculate tile coordinates
+        tile_x, tile_y = util.lat_lon_to_tile(lat, lon, self.zoom)
+        # Calculate pixel coordinates
+        pixel_x, pixel_y = self.tile_to_pixel(tile_x, tile_y)
+        
+        self.draw.point((pixel_x, pixel_y), fill=color)
+
+    def tile_to_pixel(self, x, y):
+        pixel_x = int(self.tile_size * (x - self.tile_x_extent[0]))
+        pixel_y = int(self.tile_size * (y - self.tile_y_extent[0]))
+        return (pixel_x, pixel_y)
 
     def show(self):
         self.image.show()
