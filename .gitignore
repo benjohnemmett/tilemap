@@ -1,3 +1,5 @@
 __pycache__/
 *.pyc
 map_tiles/
+
+.DS_Store

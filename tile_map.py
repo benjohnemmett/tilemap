@@ -1,7 +1,7 @@
 import math
 import os
 from PIL import Image, ImageDraw
-import map_it.util as util
+import tilemap.util as util
 
 class TileMap():
     def __init__(self, ll_p1, ll_p2, zoom):

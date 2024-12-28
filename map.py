@@ -1,8 +1,6 @@
-import math
 import os
 from PIL import Image, ImageDraw
-from util import lat_lon_to_tile, get_tile_url, lat_lon_to_tile_int, tile_to_lat_lon, map_vis_tile_dir_path
-import requests
+from util import lat_lon_to_tile, tile_to_lat_lon, map_vis_tile_dir_path
 
 class Map():
   def __init__(self, x, y, zoom, map_tile_dir=map_vis_tile_dir_path):
@@ -34,10 +32,3 @@ class Map():
   def show(self):
     self.image.show()
 
-if __name__ == "__main__":
-  m = Map()
-  m.set_image(8482, 13014, 15)
-
-  m.mark(34.67899766666667, -86.80518516666666)
-
-  m.show()
