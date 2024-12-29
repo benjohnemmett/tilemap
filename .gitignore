@@ -3,3 +3,4 @@ __pycache__/
 map_tiles/
 
 .DS_Store
+*.png
