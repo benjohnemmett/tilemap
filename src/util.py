@@ -3,7 +3,6 @@ import os
 
 util_file_path = os.path.abspath(__file__)
 map_vis_tile_dir_path = os.path.join(os.path.dirname(util_file_path), "map_tiles")
-print(f"map_vis_tile_dir_path: {map_vis_tile_dir_path}")
 
 # From https://wiki.openstreetmap.org/wiki/Slippy_map_tilenames#Lon..2Flat._to_tile_numbers_2
 def lat_lon_to_tile(lat_deg, lon_deg, zoom):

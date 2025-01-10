@@ -29,8 +29,8 @@ class TileManager:
     return None
 
   def get_tile_url(self, x, y, zoom):
-    return f"https://tile.openstreetmap.org/{zoom}/{x}/{y}.png"
-    # return f"https://mt.google.com/vt/lyrs=s&x={x}&y={y}&z={zoom}"
+    # return f"https://tile.openstreetmap.org/{zoom}/{x}/{y}.png"
+    return f"https://mt.google.com/vt/lyrs=s&x={x}&y={y}&z={zoom}"
 
   def get_tile_path(self, x, y, zoom):
     file_name = f"{self.layer + '-' if self.layer else ''}{zoom}-{x}-{y}.jpeg"
